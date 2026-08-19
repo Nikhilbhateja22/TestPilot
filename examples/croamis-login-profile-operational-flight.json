@@ -1,0 +1,354 @@
+{
+  "title": "CROAMIS - Login, INT Profile, Maintain Operational Flights",
+  "executionMode": "demo",
+  "steps": [
+    {
+      "type": "setViewport",
+      "width": 832,
+      "height": 684,
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "isLandscape": false
+    },
+    {
+      "type": "navigate",
+      "url": "https://preprod.croamis.latamcargo.com/croamis/userHome",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/userHome",
+          "title": "CROAMIS"
+        }
+      ]
+    },
+    {
+      "type": "waitForElement",
+      "selectors": [
+        [".loginLogo"]
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        [".privacy-btn"],
+        ["pierce/.privacy-btn"]
+      ]
+    },
+    {
+      "type": "change",
+      "value": "AUTOADMIN",
+      "selectors": [
+        ["#userName"],
+        ["xpath///*[@id=\"userName\"]"],
+        ["pierce/#userName"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "{{TESTPILOT_SECRET}}",
+      "selectors": [
+        ["#password"],
+        ["xpath///*[@id=\"password\"]"],
+        ["pierce/#password"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#login"],
+        ["xpath///*[@id=\"login\"]"],
+        ["pierce/#login"]
+      ],
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/userHome?a=app",
+          "title": "CROAMIS"
+        }
+      ]
+    },
+    {
+      "type": "waitForElement",
+      "selectors": [
+        [".userinfoarrow"],
+        ["pierce/.userinfoarrow"]
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        [".userinfoarrow"],
+        ["pierce/.userinfoarrow"]
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#userSettingsPopup"],
+        ["xpath///*[@id=\"userSettingsPopup\"]"],
+        ["pierce/#userSettingsPopup"]
+      ]
+    },
+    {
+      "type": "waitForElement",
+      "selectors": [
+        ["#environment"],
+        ["pierce/#environment"]
+      ]
+    },
+    {
+      "type": "change",
+      "value": "INT",
+      "selectors": [
+        ["#environment"],
+        ["xpath///*[@id=\"environment\"]"],
+        ["pierce/#environment"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "MIA",
+      "selectors": [
+        ["#airport"],
+        ["xpath///*[@id=\"airport\"]"],
+        ["pierce/#airport"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "waitForElement",
+      "selectors": [
+        ["#warehouse"],
+        ["pierce/#warehouse"]
+      ]
+    },
+    {
+      "type": "change",
+      "value": "RC02",
+      "selectors": [
+        ["#whsSection"],
+        ["xpath///*[@id=\"whsSection\"]"],
+        ["pierce/#whsSection"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "WORK-3",
+      "selectors": [
+        ["#whsLocation"],
+        ["xpath///*[@id=\"whsLocation\"]"],
+        ["pierce/#whsLocation"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "GHAUS-US-MIA-MIA",
+      "selectors": [
+        ["#branchCode"],
+        ["xpath///*[@id=\"branchCode\"]"],
+        ["pierce/#branchCode"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#changeLocation"],
+        ["xpath///*[@id=\"changeLocation\"]"],
+        ["pierce/#changeLocation"]
+      ]
+    },
+    {
+      "type": "waitForElement",
+      "selectors": [
+        ["#jqgh_PRTQL001Grid_queuedReasonDesc"],
+        ["pierce/#jqgh_PRTQL001Grid_queuedReasonDesc"]
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Schedules"],
+        ["#menu1 > li:nth-of-type(4) > a"],
+        ["xpath///*[@id=\"menu1\"]/li[4]/a"],
+        ["pierce/#menu1 > li:nth-of-type(4) > a"]
+      ],
+      "offsetY": 29.270832061767578,
+      "offsetX": 28.724533081054688
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Maintain Operational Flights"],
+        ["li:nth-of-type(4) > div > div:nth-of-type(1) li:nth-of-type(2) > a"],
+        ["xpath///*[@id=\"menu1\"]/li[4]/div/div[1]/div/ul/li[2]/a"],
+        ["pierce/li:nth-of-type(4) > div > div:nth-of-type(1) li:nth-of-type(2) > a"],
+        ["text/Maintain Operational Flights"]
+      ],
+      "offsetY": 10.821754455566406,
+      "offsetX": 122.77777671813965,
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/maintainOperationalFlights?a=SCH",
+          "title": ""
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#operatingFlightsA"],
+        ["#pg_operatingFlightsGridNav div"],
+        ["xpath///*[@id=\"operatingFlightsA\"]"],
+        ["pierce/#operatingFlightsA"]
+      ],
+      "offsetY": 3.24072265625,
+      "offsetX": 24.837961196899414
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "l"
+    },
+    {
+      "type": "keyUp",
+      "key": "l",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "a"
+    },
+    {
+      "type": "keyUp",
+      "key": "a",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "8"
+    },
+    {
+      "type": "keyUp",
+      "key": "8",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "9"
+    },
+    {
+      "type": "keyUp",
+      "key": "9",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "9"
+    },
+    {
+      "type": "keyUp",
+      "key": "9",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "1"
+    },
+    {
+      "type": "keyUp",
+      "key": "1",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "2"
+    },
+    {
+      "type": "keyUp",
+      "key": "2",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "PAX",
+      "selectors": [
+        ["#operationType"],
+        ["xpath///*[@id=\"operationType\"]"],
+        ["pierce/#operationType"]
+      ],
+      "target": "main"
+    }
+  ]
+}

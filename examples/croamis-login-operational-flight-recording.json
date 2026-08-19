@@ -1,0 +1,282 @@
+{
+  "title": "CROAMIS - Login and Maintain Operational Flights",
+  "executionMode": "demo",
+  "steps": [
+    {
+      "type": "setViewport",
+      "width": 832,
+      "height": 701,
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "isLandscape": false
+    },
+    {
+      "type": "navigate",
+      "url": "https://preprod.croamis.latamcargo.com/croamis/userLogin",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/userLogin",
+          "title": "CROAMIS"
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Enter Username"],
+        ["#userName"],
+        ["xpath///*[@id=\"userName\"]"],
+        ["pierce/#userName"]
+      ],
+      "offsetY": 13.145828247070312,
+      "offsetX": 68.63656616210938
+    },
+    {
+      "type": "change",
+      "value": "AUTOADMIN",
+      "selectors": [
+        ["aria/Enter Username"],
+        ["#userName"],
+        ["xpath///*[@id=\"userName\"]"],
+        ["pierce/#userName"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "change",
+      "value": "{{TESTPILOT_SECRET}}",
+      "selectors": [
+        ["aria/Enter Password"],
+        ["#password"],
+        ["xpath///*[@id=\"password\"]"],
+        ["pierce/#password"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Enter",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/userHome",
+          "title": ""
+        }
+      ]
+    },
+    {
+      "type": "keyUp",
+      "key": "Enter",
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Schedules"],
+        ["#menu1 > li:nth-of-type(4) > a"],
+        ["xpath///*[@id=\"menu1\"]/li[4]/a"],
+        ["pierce/#menu1 > li:nth-of-type(4) > a"]
+      ],
+      "offsetY": 16.270832061767578,
+      "offsetX": 27.724533081054688
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Maintain Operational Flights"],
+        ["li:nth-of-type(4) > div > div:nth-of-type(1) li:nth-of-type(2) > a"],
+        ["xpath///*[@id=\"menu1\"]/li[4]/div/div[1]/div/ul/li[2]/a"],
+        ["pierce/li:nth-of-type(4) > div > div:nth-of-type(1) li:nth-of-type(2) > a"],
+        ["text/Maintain Operational Flights"]
+      ],
+      "offsetY": 15.821754455566406,
+      "offsetX": 108.77777671813965,
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://preprod.croamis.latamcargo.com/croamis/maintainOperationalFlights?a=SCH",
+          "title": ""
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#pg_operatingFlightsGridNav div"],
+        ["xpath///*[@id=\"operatingFlightsA\"]/div"],
+        ["pierce/#pg_operatingFlightsGridNav div"]
+      ],
+      "offsetY": 13.24072265625,
+      "offsetX": 17.837961196899414
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "l"
+    },
+    {
+      "type": "keyUp",
+      "key": "l",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "a"
+    },
+    {
+      "type": "keyUp",
+      "key": "a",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "1"
+    },
+    {
+      "type": "keyUp",
+      "key": "1",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "2"
+    },
+    {
+      "type": "keyUp",
+      "key": "2",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "2"
+    },
+    {
+      "type": "keyUp",
+      "key": "2",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "1"
+    },
+    {
+      "type": "keyUp",
+      "key": "1",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "1"
+    },
+    {
+      "type": "keyUp",
+      "key": "1",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "2"
+    },
+    {
+      "type": "keyUp",
+      "key": "2",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Tab"
+    },
+    {
+      "type": "keyUp",
+      "key": "Tab",
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["section.contentPanel > section > section:nth-of-type(1) li:nth-of-type(3)"],
+        ["xpath///*[@id=\"flightDetailsPanel\"]/ul/li[3]"],
+        ["pierce/section.contentPanel > section > section:nth-of-type(1) li:nth-of-type(3)"]
+      ],
+      "offsetY": 35.824066162109375,
+      "offsetX": 16.69207763671875
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["#operationType"],
+        ["xpath///*[@id=\"operationType\"]"],
+        ["pierce/#operationType"]
+      ],
+      "offsetY": 13.192108154296875,
+      "offsetX": 25.69207763671875
+    },
+    {
+      "type": "change",
+      "value": "PAX",
+      "selectors": [
+        ["#operationType"],
+        ["xpath///*[@id=\"operationType\"]"],
+        ["pierce/#operationType"]
+      ],
+      "target": "main"
+    }
+  ]
+}

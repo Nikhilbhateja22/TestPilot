@@ -1,0 +1,101 @@
+{
+  "title": "Urban Ladder - Search and Add Product to Cart",
+  "executionMode": "demo",
+  "steps": [
+    {
+      "type": "setViewport",
+      "width": 749,
+      "height": 631,
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "isLandscape": false
+    },
+    {
+      "type": "navigate",
+      "url": "https://www.urbanladder.com/",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://www.urbanladder.com/",
+          "title": ""
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Search"],
+        ["#inputSearch"],
+        ["xpath///*[@id=\"inputSearch\"]"],
+        ["pierce/#inputSearch"]
+      ],
+      "offsetY": 9,
+      "offsetX": 214.5208282470703
+    },
+    {
+      "type": "change",
+      "value": "cart",
+      "selectors": [
+        ["[data-testid='search-input']"],
+        ["xpath///*[@data-testid=\"search-input\"]"],
+        ["pierce/[data-testid='search-input']"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Enter"
+    },
+    {
+      "type": "keyUp",
+      "key": "Enter",
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Yura Solid Wood And Cane Bar Trolley (Danish Walnut Finish)[role=\"image\"]"],
+        ["html > body > #app > div > div.fdk-theme-outlet > div > div.MniCX > div.HOVM7 > div > [data-testid='plp-product-card'] > div.X0lDv > img"],
+        ["xpath///*[@data-testid=\"plp-product-card\"]/div[1]/img"],
+        ["pierce/html > body > #app > div > div.fdk-theme-outlet > div > div.MniCX > div.HOVM7 > div > [data-testid='plp-product-card'] > div.X0lDv > img"]
+      ],
+      "offsetY": 217,
+      "offsetX": 112.33332824707031
+    },
+    {
+      "type": "change",
+      "value": "560001",
+      "selectors": [
+        ["[data-testid='pdp-pincode-input']"],
+        ["xpath///*[@data-testid=\"pdp-pincode-input\"]"],
+        ["pierce/[data-testid='pdp-pincode-input']"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Check[role=\"button\"]"],
+        ["text/Check"]
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/Add to Cart - Yura Solid Wood And Cane Bar Trolley (Danish Walnut Finish)"],
+        ["[data-testid='pdp-add-to-cart-button']"],
+        ["xpath///*[@data-testid=\"pdp-add-to-cart-button\"]"],
+        ["pierce/[data-testid='pdp-add-to-cart-button']"],
+        ["text/Add to Cart"]
+      ],
+      "offsetY": 29.6666259765625,
+      "offsetX": 50.53125
+    }
+  ]
+}
