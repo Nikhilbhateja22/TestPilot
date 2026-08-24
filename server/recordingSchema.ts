@@ -64,6 +64,10 @@ const generationOptionsSchema = z.object({
   trace: z.boolean(),
   screenshot: z.boolean(),
   video: z.boolean(),
+  testTimeoutMs: z.number().int().min(1_000).max(300_000).optional(),
+  expectTimeoutMs: z.number().int().min(1_000).max(300_000).optional(),
+  actionTimeoutMs: z.number().int().min(1_000).max(300_000).optional(),
+  navigationTimeoutMs: z.number().int().min(1_000).max(300_000).optional(),
 })
 
 const runPayloadSchema = z.object({

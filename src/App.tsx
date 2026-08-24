@@ -35,6 +35,7 @@ import {
   Sun,
   TerminalSquare,
   TestTube2,
+  WandSparkles,
   UploadCloud,
   X,
 } from 'lucide-react'
@@ -46,7 +47,7 @@ import { parseRecording, RecorderParseError } from './lib/recorder'
 import type { LocatorCandidate, NormalizedStep, ParsedRecording, StepKind } from './lib/recorder'
 import './Studio.css'
 
-type WorkspaceView = 'blueprint' | 'code' | 'runs'
+type WorkspaceView = 'blueprint' | 'code' | 'runs' | 'agent'
 type Theme = 'light' | 'dark'
 type RunnerState = 'idle' | 'running' | 'passed' | 'failed'
 
@@ -60,6 +61,33 @@ type RunResult = {
   output: string
   error?: string
   artifacts: { name: string; url: string; type: string }[]
+}
+
+type AgentRunResult = {
+  status: 'recovered' | 'failed' | 'passed'
+  recovered: boolean
+  attempts: {
+    number: number
+    status: 'passed' | 'failed'
+    durationMs: number
+    completedSteps: number
+    totalSteps: number
+    evidence: string
+    runId: string
+  }[]
+  diagnosis?: {
+    category: 'locator-drift'
+    rootCause: string
+    failedStepTitle: string
+    confidence: number
+    decision: 'repair-and-retry'
+  }
+  patch?: {
+    before: LocatorCandidate
+    after: LocatorCandidate
+    rationale: string
+  }
+  finalRun: RunResult
 }
 
 const stepIcons: Record<StepKind, typeof Navigation> = {
@@ -77,6 +105,7 @@ const viewItems: { id: WorkspaceView; label: string; icon: typeof LayoutDashboar
   { id: 'blueprint', label: 'Blueprint', icon: LayoutDashboard },
   { id: 'code', label: 'Generated code', icon: Code2 },
   { id: 'runs', label: 'Test runs', icon: Activity },
+  { id: 'agent', label: 'Agent Lab', icon: WandSparkles },
 ]
 
 const formatDuration = (durationMs: number): string =>
@@ -111,6 +140,8 @@ function TestPilotStudio() {
   const [runnerOnline, setRunnerOnline] = useState(false)
   const [runnerState, setRunnerState] = useState<RunnerState>('idle')
   const [runResult, setRunResult] = useState<RunResult | null>(null)
+  const [agentState, setAgentState] = useState<'idle' | 'running' | 'complete' | 'failed'>('idle')
+  const [agentResult, setAgentResult] = useState<AgentRunResult | null>(null)
   const [secret, setSecret] = useState('portfolio-demo')
   const [runOptions, setRunOptions] = useState({ trace: true, screenshot: true, video: false })
 
@@ -260,6 +291,28 @@ function TestPilotStudio() {
     }
   }
 
+  const runAgentLab = async () => {
+    setView('agent')
+    setAgentState('running')
+    setAgentResult(null)
+    try {
+      const response = await fetch('/api/agent/repair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ origin: window.location.origin }),
+      })
+      const result = (await response.json()) as AgentRunResult & { message?: string }
+      if (!response.ok) throw new Error(result.message ?? 'Agent Lab could not start.')
+      setRunnerOnline(true)
+      setAgentResult(result)
+      setAgentState(result.status === 'failed' ? 'failed' : 'complete')
+    } catch (error) {
+      setRunnerOnline(false)
+      setAgentState('failed')
+      setNotice(error instanceof Error ? error.message : 'Agent Lab is unavailable.')
+    }
+  }
+
   return (
     <div className="app-shell" onDragEnter={(event) => { event.preventDefault(); setIsDragging(true) }} onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
       <input ref={fileInputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={handleFileChange} />
@@ -312,6 +365,7 @@ function TestPilotStudio() {
         {view === 'blueprint' && <BlueprintView recording={recording} activeStep={activeStep} filteredSteps={filteredSteps} query={query} secret={secret} runOptions={runOptions} onQueryChange={setQuery} onStepSelect={setActiveStepId} onLocatorSelect={chooseLocator} onValueChange={updateValue} onSecretChange={setSecret} onRunOptionsChange={setRunOptions} onImport={() => fileInputRef.current?.click()} onReset={() => loadRecording(createSampleRecording(window.location.origin))} />}
         {view === 'code' && <CodeView files={project.files} activeFile={activeFile} copied={copied} onFileSelect={setActiveFilePath} onCopy={() => void copyActiveFile()} onDownload={() => void downloadProject()} />}
         {view === 'runs' && <RunsView state={runnerState} result={runResult} stepCount={recording.steps.length} executionMode={recording.executionMode} runnerOnline={runnerOnline} onRun={() => void runJourney()} />}
+        {view === 'agent' && <AgentLab state={agentState} result={agentResult} onRun={() => void runAgentLab()} />}
       </main>
 
       {isDragging && <div className="drop-overlay" onDragLeave={() => setIsDragging(false)}><div className="drop-target"><UploadCloud aria-hidden="true" /><strong>Release recording</strong><span>JSON payload detected</span></div></div>}
@@ -403,6 +457,73 @@ function RunsView({ state, result, stepCount, executionMode, runnerOnline, onRun
       <div className="run-primary"><span className="run-kicker">{isDemo ? 'DEMO SIMULATION' : 'LOCAL EXECUTION'}</span><h2>{state === 'running' ? 'Journey in flight' : state === 'passed' ? 'All checks cleared' : state === 'failed' ? 'Journey interrupted' : 'Ready on runway'}</h2><p>{state === 'running' ? (isDemo ? 'TestPilot is replaying the normalized steps without external browser calls.' : 'Chromium is replaying the normalized command sequence.') : result?.error ?? `${stepCount} commands ready for ${isDemo ? 'deterministic simulation' : 'Chromium'}.`}</p>{state !== 'running' && <button className="run-button large" type="button" onClick={onRun}><Play fill="currentColor" aria-hidden="true" /> {result ? 'Run again' : isDemo ? 'Start demo' : 'Start test run'}</button>}</div>
       <div className="run-telemetry"><div><span>Status</span><strong className={`status-${state}`}>{state.toUpperCase()}</strong></div><div><span>Mode</span><strong>{isDemo ? 'DEMO' : runnerOnline ? 'LIVE' : 'OFFLINE'}</strong></div><div><span>Duration</span><strong>{result ? formatDuration(result.durationMs) : '—'}</strong></div><div><span>Steps</span><strong>{result ? `${result.completedSteps}/${result.totalSteps}` : `0/${stepCount}`}</strong></div></div>
       {result && <section className="run-output"><div className="panel-heading"><div><span>CONSOLE</span><strong>Execution output</strong></div><TerminalSquare aria-hidden="true" /></div><pre>{result.output || result.error || 'No console output was returned.'}</pre>{result.artifacts.length > 0 && <div className="artifact-row">{result.artifacts.map((artifact) => <a key={artifact.url} href={artifact.url} target="_blank" rel="noreferrer"><Gauge aria-hidden="true" />{artifact.name}</a>)}</div>}</section>}
+    </section>
+  )
+}
+
+function AgentLab({ state, result, onRun }: { state: 'idle' | 'running' | 'complete' | 'failed'; result: AgentRunResult | null; onRun: () => void }) {
+  const recovered = result?.status === 'recovered'
+  return (
+    <section className="agent-workspace">
+      <header className="agent-header">
+        <div>
+          <span className="run-kicker">BOUNDED REPAIR AGENT</span>
+          <h2>{recovered ? 'Failure recovered' : state === 'running' ? 'Agent investigating' : state === 'failed' ? 'Repair stopped safely' : 'Locator Mutation Lab'}</h2>
+          <p>A controlled UI mutation breaks the recorded role locator. The agent runs Playwright, gathers evidence, selects a recorded fallback, patches the locator, and verifies one retry.</p>
+        </div>
+        <button className="run-button large" type="button" onClick={onRun} disabled={state === 'running'}>
+          {state === 'running' ? <LoaderCircle className="spin" aria-hidden="true" /> : <WandSparkles aria-hidden="true" />}
+          {state === 'running' ? 'Agent running' : result ? 'Run lab again' : 'Start Agent Lab'}
+        </button>
+      </header>
+
+      <div className="agent-policy">
+        <span><ShieldCheck aria-hidden="true" /><b>Mutation</b> Locator drift only</span>
+        <span><RefreshCcw aria-hidden="true" /><b>Retry budget</b> Maximum 1</span>
+        <span><LocateFixed aria-hidden="true" /><b>Target</b> Local sandbox only</span>
+        <span><Braces aria-hidden="true" /><b>Patch scope</b> Recorded locators</span>
+      </div>
+
+      {!result && state !== 'running' && (
+        <div className="agent-empty">
+          <div className="mutation-preview"><code>getByRole('button', {'{'} name: 'Add Trail Camera to cart' {'}'})</code><span>UI mutation changes the accessible name</span></div>
+          <ChevronRight aria-hidden="true" />
+          <div className="mutation-preview is-fallback"><code>getByTestId('add-camera')</code><span>Recorded fallback remains available</span></div>
+        </div>
+      )}
+
+      {state === 'running' && (
+        <div className="agent-running"><div className="agent-orbit"><WandSparkles aria-hidden="true" /></div><strong>Executing the failure-repair loop</strong><span>Attempt 1 → evidence → patch → attempt 2</span></div>
+      )}
+
+      {result && (
+        <div className="agent-results">
+          <section className="attempt-timeline">
+            <div className="panel-heading"><div><span>ATTEMPTS</span><strong>Execution timeline</strong></div><Activity aria-hidden="true" /></div>
+            {result.attempts.map((attempt) => (
+              <article className={`attempt-row is-${attempt.status}`} key={attempt.number}>
+                <span className="attempt-number">0{attempt.number}</span>
+                <span className="attempt-status">{attempt.status === 'passed' ? <CheckCircle2 aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}</span>
+                <div><strong>{attempt.status === 'passed' ? 'Verification passed' : 'Initial execution failed'}</strong><small>{attempt.evidence}</small></div>
+                <div className="attempt-metric"><b>{formatDuration(attempt.durationMs)}</b><span>{attempt.completedSteps}/{attempt.totalSteps} steps</span></div>
+              </article>
+            ))}
+          </section>
+
+          <section className="agent-diagnosis">
+            <div className="panel-heading"><div><span>DIAGNOSIS</span><strong>Evidence-backed decision</strong></div><Sparkles aria-hidden="true" /></div>
+            {result.diagnosis ? <div className="diagnosis-body"><div className="confidence-ring"><strong>{Math.round(result.diagnosis.confidence * 100)}%</strong><span>confidence</span></div><div><span className="diagnosis-tag">{result.diagnosis.category}</span><h3>{result.diagnosis.failedStepTitle}</h3><p>{result.diagnosis.rootCause}</p><b>{result.diagnosis.decision}</b></div></div> : <div className="diagnosis-body"><p>No repair was required.</p></div>}
+          </section>
+
+          {result.patch && (
+            <section className="agent-patch">
+              <div className="panel-heading"><div><span>PATCH</span><strong>Approved repair boundary</strong></div><Code2 aria-hidden="true" /></div>
+              <div className="diff-block"><div className="diff-line is-removed"><span>−</span><code>{result.patch.before.raw}</code></div><div className="diff-line is-added"><span>+</span><code>{result.patch.after.raw}</code></div></div>
+              <p>{result.patch.rationale}</p>
+            </section>
+          )}
+        </div>
+      )}
     </section>
   )
 }

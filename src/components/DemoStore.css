@@ -25,6 +25,7 @@
 .product-item > button { position: absolute; right: 18px; bottom: 17px; width: 38px; height: 38px; display: grid; place-items: center; color: #edf0df; background: #172016; border: 0; border-radius: 50%; cursor: pointer; }
 .product-item > button:hover { color: #172016; background: #caff3d; }
 .product-item > button svg { width: 17px; }
+.cart-confirmation { position: fixed; right: 24px; bottom: 24px; z-index: 20; padding: 12px 16px; color: #172016; background: #caff3d; border: 1px solid #a9d52f; box-shadow: 0 10px 30px rgba(23, 32, 22, 0.18); font: 600 10px var(--font-mono); }
 .drawer-scrim { position: fixed; z-index: 50; inset: 0; width: 100%; height: 100%; background: rgba(20, 26, 19, 0.4); border: 0; backdrop-filter: blur(3px); }
 .cart-drawer { position: fixed; z-index: 60; inset: 0 0 0 auto; width: min(480px, 100%); padding: 28px; overflow: auto; background: #f8f9f0; box-shadow: -20px 0 70px rgba(23, 32, 22, 0.2); animation: open-cart 300ms ease both; }
 @keyframes open-cart { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -54,4 +55,4 @@
 .order-success svg { width: 34px; }
 .order-success h3 { max-width: 300px; margin: 22px 0 8px; font: 600 31px/1.02 var(--font-display); }
 .order-success p { margin: 0; color: #6d7667; font-size: 11px; }
-@media (max-width: 760px) { .store-header { grid-template-columns: 1fr auto; padding-inline: 16px; } .store-header nav { display: none; } .store-intro { min-height: 360px; grid-template-columns: 1fr; align-content: end; padding: 60px 20px 34px; } .store-intro h1 { font-size: 52px; } .product-grid { grid-template-columns: 1fr; } .product-item { padding: 14px; } .cart-drawer { padding: 20px; } }
+@media (max-width: 760px) { .store-header { grid-template-columns: 1fr auto; padding-inline: 16px; } .store-header nav { display: none; } .store-intro { min-height: 360px; grid-template-columns: 1fr; align-content: end; padding: 60px 20px 34px; } .store-intro h1 { font-size: 52px; } .product-grid { grid-template-columns: 1fr; } .product-item { padding: 14px; } .cart-drawer { padding: 20px; } .cart-confirmation { right: 14px; bottom: 76px; left: 14px; text-align: center; } }

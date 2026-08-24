@@ -5,8 +5,11 @@ import * as archiverModule from 'archiver'
 import cors from 'cors'
 import express from 'express'
 import { ZodError } from 'zod'
+import { createLocatorRepairScenario } from '../src/data/agentScenario'
 import { generateProject } from '../src/lib/generator'
+import { parseRecording } from '../src/lib/recorder'
 import { parseRecordingPayload, parseRunPayload } from './recordingSchema'
+import { runRepairAgent } from './repairAgent'
 import { runJourney, runsDirectory } from './runner'
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -66,6 +69,22 @@ app.post('/api/runs', async (request, response, next) => {
   try {
     const payload = parseRunPayload(request.body)
     response.json(await runJourney(payload.recording, payload.secret, payload.options))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/agent/repair', async (request, response, next) => {
+  try {
+    const origin = typeof request.body?.origin === 'string'
+      ? new URL(request.body.origin)
+      : new URL('http://localhost:5173')
+    if (!['localhost', '127.0.0.1'].includes(origin.hostname)) {
+      response.status(400).json({ message: 'Agent Lab only runs against the local mutation target.' })
+      return
+    }
+    const recording = parseRecording(createLocatorRepairScenario(origin.origin))
+    response.json(await runRepairAgent(recording))
   } catch (error) {
     next(error)
   }

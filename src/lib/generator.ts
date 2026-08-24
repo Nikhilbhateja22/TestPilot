@@ -18,6 +18,10 @@ export type GenerationOptions = {
   trace: boolean
   screenshot: boolean
   video: boolean
+  testTimeoutMs?: number
+  expectTimeoutMs?: number
+  actionTimeoutMs?: number
+  navigationTimeoutMs?: number
 }
 
 const defaultOptions: GenerationOptions = {
@@ -147,7 +151,7 @@ const createTest = (recording: ParsedRecording, className: string, fileStem: str
   return `import { test } from '@playwright/test'\nimport { ${className} } from '../pages/${fileStem}.page'\n\ntest(${quote(recording.title)}, async ({ page }) => {\n  const journey = new ${className}(page)\n\n${steps}\n})\n`
 }
 
-const createConfig = (options: GenerationOptions): string => `import { defineConfig, devices } from '@playwright/test'\n\nexport default defineConfig({\n  testDir: './tests',\n  outputDir: './test-results/artifacts',\n  timeout: 180_000,\n  expect: { timeout: 90_000 },\n  retries: 0,\n  reporter: [\n    ['line'],\n    ['json', { outputFile: 'test-results/results.json' }],\n  ],\n  use: {\n    actionTimeout: 90_000,\n    navigationTimeout: 90_000,\n    trace: '${options.trace ? 'retain-on-failure' : 'off'}',\n    screenshot: '${options.screenshot ? 'only-on-failure' : 'off'}',\n    video: '${options.video ? 'retain-on-failure' : 'off'}',\n  },\n  projects: [\n    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },\n  ],\n})\n`
+const createConfig = (options: GenerationOptions): string => `import { defineConfig, devices } from '@playwright/test'\n\nexport default defineConfig({\n  testDir: './tests',\n  outputDir: './test-results/artifacts',\n  timeout: ${options.testTimeoutMs ?? 180_000},\n  expect: { timeout: ${options.expectTimeoutMs ?? 90_000} },\n  retries: 0,\n  reporter: [\n    ['line'],\n    ['json', { outputFile: 'test-results/results.json' }],\n  ],\n  use: {\n    actionTimeout: ${options.actionTimeoutMs ?? 90_000},\n    navigationTimeout: ${options.navigationTimeoutMs ?? 90_000},\n    trace: '${options.trace ? 'retain-on-failure' : 'off'}',\n    screenshot: '${options.screenshot ? 'only-on-failure' : 'off'}',\n    video: '${options.video ? 'retain-on-failure' : 'off'}',\n  },\n  projects: [\n    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },\n  ],\n})\n`
 
 const createPackageJson = (projectName: string): string =>
   `${JSON.stringify(

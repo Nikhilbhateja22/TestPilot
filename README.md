@@ -2,6 +2,19 @@
 
 TestPilot converts Chrome Recorder journeys into structured Playwright projects. It normalizes browser commands, scores locator quality, protects sensitive values, generates Page Objects, executes tests locally, and exposes screenshots, videos, and traces from failed runs.
 
+## Agent Lab
+
+Agent Lab demonstrates a genuine bounded repair loop against a controlled local mutation:
+
+1. A locator-drift mutation changes the Trail Camera button's accessible name.
+2. Playwright executes the original recording and fails on its role locator.
+3. The agent extracts the failed step and locator evidence from the run output.
+4. It selects a high-confidence fallback captured in the original Recorder JSON.
+5. It patches only that locator and reruns the real Playwright test once.
+6. The UI displays both attempts, diagnosis confidence, locator diff, and final verification.
+
+The current agent is a deterministic policy agent and does not require an LLM API. Its autonomy is deliberately bounded to localhost, one retry, and recorded locator alternatives; it cannot modify application code, credentials, assertions, or arbitrary test logic. An LLM can later augment diagnosis wording without owning execution or patch safety.
+
 ## Core workflow
 
 1. Import a Chrome Recorder JSON file or use the built-in checkout journey.
@@ -53,6 +66,9 @@ flowchart LR
   E --> G[Temporary runner]
   G --> H[Results and artifacts]
   E --> I[ZIP export]
+  G --> J[Repair agent]
+  J --> K[Evidence-backed patch]
+  K --> G
 ```
 
 The browser and API share the same pure generator, so previewed and executed code cannot drift. Live runs are written under `.testpilot-runs`, limited to 210 seconds, and pruned to the 12 most recent directories. Navigation is restricted to HTTP and HTTPS URLs, and protected input values are replaced with `TESTPILOT_SECRET` in generated source.

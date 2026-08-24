@@ -40,9 +40,27 @@ describe('generateProject', () => {
     expect(config).toContain("trace: 'off'")
     expect(config).toContain("screenshot: 'only-on-failure'")
     expect(config).toContain("video: 'retain-on-failure'")
-    expect(config).toContain('timeout: 180_000')
-    expect(config).toContain('actionTimeout: 90_000')
-    expect(config).toContain('navigationTimeout: 90_000')
+    expect(config).toContain('timeout: 180000')
+    expect(config).toContain('actionTimeout: 90000')
+    expect(config).toContain('navigationTimeout: 90000')
+  })
+
+  it('supports bounded timeout overrides for agent attempts', () => {
+    const configuredProject = generateProject(recording, {
+      trace: true,
+      screenshot: true,
+      video: false,
+      testTimeoutMs: 12_000,
+      expectTimeoutMs: 6_000,
+      actionTimeoutMs: 6_000,
+      navigationTimeoutMs: 8_000,
+    })
+    const config = configuredProject.files.find((file) => file.path === 'playwright.config.ts')?.content
+
+    expect(config).toContain('timeout: 12000')
+    expect(config).toContain('expect: { timeout: 6000 }')
+    expect(config).toContain('actionTimeout: 6000')
+    expect(config).toContain('navigationTimeout: 8000')
   })
 
   it('sets dropdowns and event-sensitive inputs through their native interaction paths', () => {

@@ -101,4 +101,17 @@ describe('TestPilot API', () => {
     expect(mediumJourney).toBeLessThan(55_000)
     expect(largeJourney).toBe(55_000)
   })
+
+  it('rejects non-local Agent Lab targets', async () => {
+    const response = await fetch(`${origin}/api/agent/repair`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin: 'https://example.com' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({
+      message: 'Agent Lab only runs against the local mutation target.',
+    })
+  })
 })
