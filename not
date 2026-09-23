@@ -1,0 +1,811 @@
+# TestPilot Interview Preparation Guide
+
+This guide turns TestPilot into an interview-ready project story. It is written to match the project section of the resume while staying accurate to the implementation.
+
+## 1. Best opening introduction
+
+### One-line version
+
+> TestPilot is a full-stack developer productivity tool that converts Chrome Recorder journeys into maintainable, executable Playwright TypeScript projects.
+
+### 30-second version
+
+> I built TestPilot to remove the repetitive work between recording a browser flow and creating a maintainable automation project. A user imports Chrome Recorder JSON, and TestPilot validates and normalizes the commands, ranks the captured locators by quality, protects sensitive values, and deterministically generates a Playwright project with a Page Object, test specification, configuration, package metadata, and environment template. The same project can be previewed, executed locally in Chromium from the web interface, and exported as a ZIP. I also built a bounded repair lab that can diagnose a controlled locator-drift failure, select a safe fallback from the original recording, patch only that locator, and verify one retry.
+
+### 90-second version
+
+> TestPilot is a local full-stack automation studio built with React, TypeScript, Express, Zod, and Playwright. The problem I wanted to solve was that Chrome Recorder captures useful browser interaction evidence, but its raw JSON is not the same as a maintainable test framework. Engineers still have to interpret commands, choose stable selectors, create Page Objects, configure Playwright, handle secrets, run the test, and package the result.
+>
+> TestPilot turns that manual sequence into one pipeline. The frontend imports a Recorder JSON file and sends it through a typed normalization layer. That layer maps raw commands into a smaller internal model, removes redundant events such as `keyUp`, identifies unsupported actions, converts Recorder selectors into Playwright locator candidates, and assigns deterministic quality scores. A pure code-generation engine then creates six files: an executable test, a Page Object, Playwright configuration, package metadata, an environment template, and a README.
+>
+> The React studio lets the user inspect every normalized step, change the preferred locator, edit non-sensitive values, preview all generated files, choose trace, screenshot, and video settings, and export the project. For live validation, the Express backend validates the payload again, writes an isolated run directory, launches Playwright Chromium as a child process, and returns status, progress, console output, and retained failure artifacts.
+>
+> I also added a deliberately constrained repair workflow. When a controlled UI mutation breaks a role locator, the agent reads Playwright failure evidence, identifies the failed recorded step, chooses a non-XPath fallback with a score of at least 70 from the original recording, changes only that locator, and retries once. It is deterministic and auditable rather than an unrestricted self-healing system.
+
+## 2. The problem TestPilot solves
+
+Chrome DevTools Recorder is useful for capturing a user journey, but a recording alone has several limitations:
+
+1. Raw commands are not organized as a reusable automation framework.
+2. Recorder JSON may contain several locator alternatives of very different quality.
+3. Recorded passwords or tokens can accidentally enter generated source code.
+4. Generated actions may not follow application-specific interaction requirements.
+5. A developer still needs a Playwright config, test structure, Page Object, dependencies, and documentation.
+6. There is no project-specific review screen for unsupported commands or weak selectors.
+7. Exporting code without executing it can produce a project that looks correct but fails immediately.
+8. Locator drift remains a common cause of UI automation failures.
+
+TestPilot provides one local workflow for all of those steps:
+
+```text
+Record -> Import -> Validate -> Normalize -> Score -> Inspect
+       -> Generate -> Preview -> Execute -> Diagnose -> Export
+```
+
+The key value is not just code conversion. It is turning recorder evidence into a reviewable, testable, and portable automation project.
+
+## 3. What the product does
+
+| Capability | What the user sees | What happens internally |
+|---|---|---|
+| Import | Select or drag a Recorder JSON file | Browser parses JSON and Zod validates the recording shape |
+| Normalize | A sequential execution map | Raw commands become a typed internal step model |
+| Locator review | Ranked selector alternatives and quality scores | Selector syntax is classified and scored deterministically |
+| Value editing | Editable non-sensitive input values | The in-memory normalized step is updated and code is regenerated |
+| Secret protection | Sensitive values display as protected | Recorded value becomes `{{TESTPILOT_SECRET}}` and generated code reads an environment variable |
+| Code preview | Six generated files shown in the browser UI | A shared pure TypeScript generator rebuilds the project from current state |
+| Live run | Status, duration, completed steps, logs, and artifacts | Express writes a run project and starts Playwright Chromium locally |
+| Demo run | Predictable step-by-step simulated output | No external browser or website is contacted |
+| Repair lab | Failure, diagnosis, locator diff, and verified retry | A bounded policy selects one recorded fallback and retries once |
+| Export | Downloadable ZIP | Express streams all generated files through Archiver |
+
+## 4. What TestPilot does not claim to be
+
+Use these boundaries when an interviewer probes the project:
+
+- It is not a cloud-hosted multi-tenant platform. It is a local single-user developer tool.
+- It is not a general autonomous coding agent.
+- It does not let an LLM freely rewrite tests.
+- Its locator score is a heuristic quality signal, not proof that a selector is unique or valid at runtime.
+- Its repair lab handles one controlled category: locator drift with a previously recorded safe fallback.
+- It does not support every Chrome Recorder command. Unsupported commands are surfaced for manual conversion.
+- The browser UI initiates execution, but the Playwright process runs in the local Node backend, not inside the browser sandbox.
+- The generated output is a ready-to-run project foundation. Organization-specific fixtures, authentication, test data, and CI policies may still need to be added.
+
+Those constraints make the project easier to defend because they show deliberate engineering judgment rather than overclaiming.
+
+## 5. High-level architecture
+
+```mermaid
+flowchart LR
+  A[Chrome Recorder JSON] --> B[React import workflow]
+  B --> C[Zod validation]
+  C --> D[Command normalizer]
+  D --> E[Locator classifier and scorer]
+  E --> F[Normalized recording model]
+  F --> G[React inspector]
+  F --> H[Deterministic generator]
+  H --> I[Code preview]
+  H --> J[ZIP export]
+  H --> K[Local run directory]
+  K --> L[Playwright Chromium]
+  L --> M[JSON report and artifacts]
+  M --> N[Bounded repair policy]
+  N -->|one safe patch| K
+```
+
+### Main layers
+
+| Layer | Technology | Responsibility |
+|---|---|---|
+| Studio UI | React 19, TypeScript, Vite | Import, inspect, edit, preview, run, and export |
+| Recording domain | TypeScript, Zod | Validate raw input and produce a normalized model |
+| Generation engine | Pure TypeScript | Generate deterministic Playwright project files |
+| Local API | Express 5, Zod | Revalidate payloads, run tests, export ZIPs, serve artifacts |
+| Execution | Playwright Test, Chromium, Node child process | Execute generated projects and write reports |
+| Repair policy | TypeScript | Diagnose controlled locator drift and perform one bounded retry |
+| Verification | Vitest, Oxlint, TypeScript | Test parser, generator, API, and repair behavior |
+
+### Why the generator is shared
+
+The browser and backend import the same pure `generateProject()` function. This prevents a common architecture problem where the UI previews one version of the code while the backend executes a separate implementation. In TestPilot, the same normalized input and generation rules produce both.
+
+## 6. End-to-end working, step by step
+
+### Step 1: A journey is recorded
+
+The user records a browser flow in Chrome DevTools Recorder and exports it as JSON. Typical raw commands include:
+
+- `setViewport`
+- `navigate`
+- `click`
+- `change`
+- `keyDown`
+- `keyUp`
+- `waitForElement`
+- `scroll`
+
+A raw click can include several selector arrays, for example an ARIA selector, test ID, CSS selector, and XPath.
+
+### Step 2: The file is imported
+
+The React UI accepts `.json` files through the file picker or drag and drop.
+
+The import workflow:
+
+1. Checks the file extension.
+2. Reads the file as text.
+3. Parses JSON in the browser.
+4. Calls `parseRecording()`.
+5. Generates the initial project preview.
+6. Selects the first normalized step and generated file.
+7. Clears the previous run state.
+
+Invalid JSON and invalid Recorder structure are reported separately so the user knows whether the file is syntactically broken or has the wrong domain shape.
+
+### Step 3: Zod validates the raw shape
+
+The raw schema requires at least one step. It accepts an optional title and an optional execution mode.
+
+If no title exists, the normalized title is `Untitled flight plan`. If no execution mode exists, TestPilot defaults to `demo`, which avoids accidentally contacting an external website.
+
+Known Recorder fields are typed, while extra fields are tolerated and ignored. This allows the parser to accept normal Recorder exports without coupling the generator to every Recorder metadata field.
+
+### Step 4: Commands are normalized
+
+Raw commands are converted into a smaller internal vocabulary:
+
+| Recorder command | Internal kind | Playwright behavior |
+|---|---|---|
+| `setViewport` | `viewport` | `page.setViewportSize()` |
+| `navigate` | `navigate` | `page.goto()` |
+| `click` | `click` | Locator `click()` |
+| `change` | `fill` | Native select or sequential keyboard input |
+| `keyDown` | `press` | Locator or page keyboard `press()` |
+| `waitForElement` | `assert` | `expect(locator).toBeVisible()` |
+| `scroll` | `scroll` | `page.mouse.wheel()` |
+| `keyUp` | removed | No duplicate generated action |
+| unknown command | `unsupported` | Explicit manual-conversion failure in live code |
+
+Each normalized step keeps:
+
+- Its original command index.
+- A stable step ID.
+- The original source type.
+- A human-readable title and detail.
+- Supported or unsupported state.
+- The selected locator and all alternatives.
+- Value, URL, key, coordinates, or viewport when applicable.
+- A sensitive-field flag.
+
+This internal model separates Recorder-specific parsing from Playwright-specific generation.
+
+### Step 5: Locators are classified and ranked
+
+All nested Recorder selector arrays are flattened. Every selector is converted to a candidate with a kind, value, raw evidence, and score. Candidates are sorted by descending score; equal scores prefer the shorter value.
+
+| Locator form | Generated Playwright API | Score |
+|---|---|---:|
+| ARIA with role | `getByRole()` | 98 |
+| `data-testid` | `getByTestId()` | 96 |
+| Simple named ID | `locator('#id')` | 95 |
+| ARIA label for input change | `getByLabel()` | 94 |
+| ARIA text without role | `getByText()` | 84 |
+| Recorder `text/` selector | `getByText()` | 82 |
+| Generic CSS | `locator()` | 58 |
+| CSS with `:nth-` | `locator()` | 38 |
+| Long generated ID | `locator()` | 34 |
+| `xpath/` selector | `locator()` | 28 |
+| Raw XPath | `locator()` | 24 |
+
+The scoring policy expresses maintainability preferences:
+
+- User-facing roles and names are generally preferred.
+- Explicit test IDs and stable IDs are strong alternatives.
+- Generic CSS receives a medium score.
+- Position-dependent CSS, generated IDs, and XPath are considered brittle.
+
+The score is deterministic. It is easy to test and explain, and it never invents a selector that was absent from the recording.
+
+### Step 6: Sensitive data is redacted
+
+TestPilot checks the selected locator text for password, passcode, secret, token, API-key, and authorization patterns.
+
+When a recorded `change` command targets a sensitive field:
+
+1. The recorded value is replaced with `{{TESTPILOT_SECRET}}` in the normalized model.
+2. The UI displays a protected-field indicator.
+3. Generated source reads `process.env.TESTPILOT_SECRET`.
+4. Generated code fails clearly if the variable is missing.
+5. The original recorded secret is not written into generated project files.
+
+For a Studio run, the user-entered protected value is sent only to the local API and injected into the child process environment. It is not persisted to browser storage by TestPilot.
+
+### Step 7: The project is generated
+
+`generateProject()` is deterministic: the same normalized recording and options produce the same files.
+
+It creates exactly six files:
+
+```text
+testpilot-<journey-name>/
+|- tests/<journey-name>.spec.ts
+|- pages/<journey-name>.page.ts
+|- playwright.config.ts
+|- package.json
+|- .env.example
+`- README.md
+```
+
+#### Test specification
+
+The spec:
+
+- Imports Playwright Test.
+- Creates the generated Page Object.
+- Wraps every normalized action in `test.step()`.
+- Uses the normalized step title as the Playwright step title.
+
+The step titles are important beyond readability. The runner and repair policy use them to connect Playwright output back to the original normalized command.
+
+#### Page Object
+
+The Page Object contains:
+
+- A `Page` reference.
+- Readonly locator fields where required.
+- Constructor assignments using the selected locator candidate.
+- One asynchronous method for every normalized step.
+- A shared helper for recorded input values when the journey contains fill actions.
+
+The field and method names include the original command number. This avoids collisions when several steps have similar names and preserves traceability to the recording.
+
+#### Playwright configuration
+
+The generated config contains:
+
+- Chromium with Desktop Chrome emulation.
+- Line and JSON reporters.
+- A test output directory.
+- Test, assertion, action, and navigation timeouts.
+- Zero Playwright retries.
+- User-selected trace, screenshot, and video behavior.
+
+TestPilot owns the one-retry decision in Agent Lab rather than hiding retries inside Playwright configuration.
+
+### Step 8: Recorded input uses real interaction paths
+
+For non-`SELECT` controls, generated code performs:
+
+1. Click the target.
+2. Press `ControlOrMeta+A`.
+3. Call `pressSequentially(value, { delay: 80 })`.
+
+For a `SELECT`, it first attempts selection by label and falls back to selection by value.
+
+For a recorded `Tab`, it sends the key with an 80 ms delay and then waits 350 ms.
+
+This choice came from real automation behavior: event-sensitive jQuery and enterprise screens can depend on keyboard events, focus movement, and per-keystroke handlers. Direct DOM assignment or a high-level fill can bypass those application paths.
+
+### Step 9: The user inspects and edits the result
+
+The Blueprint view has three main areas:
+
+1. Journey browser: filter and select normalized commands.
+2. Execution map: review command order, support state, and locator type.
+3. Inspector: compare locator alternatives, change the selected locator, edit non-sensitive values, supply a protected run value, and choose artifacts.
+
+The header computes four useful metrics:
+
+- Number of normalized commands.
+- Supported-command coverage.
+- Average selected locator score.
+- Total generated lines across all six files.
+
+Every state change causes the pure generator to run again, so the preview always reflects the current selected locator and values.
+
+### Step 10: The project is exported
+
+The frontend sends the current normalized recording to `POST /api/export`.
+
+The backend:
+
+1. Revalidates the recording.
+2. Recomputes aggregate metrics instead of trusting the browser.
+3. Generates the project again on the server.
+4. Streams the six files into a compressed ZIP.
+5. Returns it as a download.
+
+Generating again on the server means the ZIP is not assembled from arbitrary browser-supplied paths or code files.
+
+### Step 11: The journey is executed
+
+For a live run, the frontend sends the recording, protected value, and artifact options to `POST /api/runs`.
+
+The backend then:
+
+1. Validates all fields and HTTP/HTTPS navigation URLs.
+2. Creates a short random run ID.
+3. Creates `.testpilot-runs/<run-id>`.
+4. Generates and writes the six project files.
+5. Launches the installed Playwright CLI through a Node child process.
+6. Uses the generated directory as the working directory.
+7. Injects `TESTPILOT_SECRET` into the child environment.
+8. Forces one Playwright worker.
+9. Applies a 210-second outer process limit.
+10. Reads the JSON report to calculate completed steps after a failure.
+11. Recursively discovers traces, screenshots, and videos.
+12. Returns a structured result to the UI.
+
+The UI displays status, mode, duration, completed steps, process output, errors, and artifact links.
+
+### Step 12: Demo mode provides safe presentation behavior
+
+Imported recordings default to demo mode unless they explicitly request live execution.
+
+Demo mode:
+
+- Does not open Chromium.
+- Does not contact the target URL.
+- Emits one running and one passing line per normalized step.
+- Masks protected values in output.
+- Uses a deterministic duration formula.
+- Produces no browser artifacts.
+
+This makes a portfolio demonstration predictable while keeping live mode available for actual validation.
+
+## 7. The bounded repair agent
+
+### The failure scenario
+
+Agent Lab uses a controlled local store. The original recording locates a button by role and accessible name:
+
+```ts
+page.getByRole('button', { name: 'Add Trail Camera to cart', exact: true })
+```
+
+A query-controlled UI mutation changes that accessible name while preserving a captured test ID:
+
+```ts
+page.getByTestId('add-camera')
+```
+
+The original locator fails, but the fallback evidence from the recording is still valid.
+
+### Observe, decide, act, verify
+
+The repair loop is agentic in a bounded sense:
+
+1. Observe: run the original generated test and collect Playwright output.
+2. Diagnose: match the failed `test.step()` title to a normalized recording step.
+3. Decide: inspect that step's original locator alternatives.
+4. Enforce policy: reject the active locator, reject XPath, and require score 70 or higher.
+5. Act: replace only the selected locator in an in-memory recording copy.
+6. Verify: generate a fresh project and run Playwright once more.
+7. Stop: return recovered or failed; never enter an unlimited retry loop.
+
+### Safety boundaries
+
+The repair agent cannot:
+
+- Edit application source code.
+- Invent arbitrary selectors.
+- Change input values or credentials.
+- Remove or weaken assertions.
+- Change control flow.
+- Run against a non-local Agent Lab target.
+- Retry more than once.
+- Select XPath as the repair fallback.
+
+### How to describe the AI aspect honestly
+
+Use this answer:
+
+> The current repair component is a deterministic policy agent rather than an LLM. It has an observe-decide-act-verify loop, but every action is constrained by recorded evidence and explicit rules. I made that choice because locator repair affects test trust. A future LLM could improve diagnosis wording or rank ambiguous candidates, but it should not bypass the policy layer or own execution safety.
+
+This is stronger than pretending a rule-based implementation is generative AI.
+
+## 8. API design
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/health` | Let the UI check local runner readiness every five seconds |
+| `POST /api/export` | Validate a normalized recording and stream a generated ZIP |
+| `POST /api/runs` | Run a demo simulation or a real Playwright journey |
+| `POST /api/agent/repair` | Execute the controlled local locator-repair scenario |
+
+Important backend controls:
+
+- The server binds to `127.0.0.1`.
+- Browser CORS accepts only localhost and `127.0.0.1` origins.
+- JSON request size is limited to 1 MB.
+- Navigation URLs must use HTTP or HTTPS.
+- A recording can contain at most 100 normalized steps.
+- Each step can contain at most 20 locator alternatives.
+- Strings, viewports, timeouts, and protected values have bounds.
+- Agent Lab accepts only a local target origin.
+- Express's `x-powered-by` header is disabled.
+
+## 9. Error handling and observability
+
+### Import errors
+
+- Wrong extension: ask for a Chrome Recorder JSON file.
+- Invalid JSON syntax: report malformed JSON.
+- Invalid recording structure: return the first Zod domain error.
+- Unsupported command: flag it during inspection and fail explicitly in live generated code.
+
+### Run errors
+
+- Missing Playwright installation: return a clear setup error.
+- Local API unavailable: UI creates an offline failed result.
+- Playwright nonzero exit: mark the journey failed.
+- Outer process timeout: return a specific 210-second limit error.
+- Missing JSON report: safely report zero completed steps for a failed run.
+
+### Useful evidence
+
+- Human-readable line reporter output.
+- Machine-readable Playwright JSON report.
+- Completed step count.
+- Trace ZIPs.
+- Failure screenshots.
+- Retained videos when enabled.
+- Agent attempt timeline, diagnosis confidence, and before/after locator diff.
+
+## 10. Important design decisions and tradeoffs
+
+### Deterministic generation instead of LLM-generated code
+
+Why:
+
+- Same input produces the same output.
+- Easier to unit test.
+- No API cost or network dependency.
+- No hallucinated selectors.
+- Security behavior is inspectable.
+
+Tradeoff:
+
+- New Recorder command types require explicit implementation.
+- It is less flexible than open-ended code generation.
+
+### Internal normalized model
+
+Why:
+
+- Decouples Recorder input from Playwright output.
+- Gives the UI, generator, API, and repair policy one contract.
+- Makes unsupported commands explicit.
+
+Tradeoff:
+
+- Some Recorder metadata is intentionally ignored.
+
+### Heuristic locator scoring
+
+Why:
+
+- Gives immediate maintainability guidance before execution.
+- Lets the system choose among captured alternatives without inventing evidence.
+- Is transparent and testable.
+
+Tradeoff:
+
+- A high-scoring locator can still be non-unique or stale.
+- A low-scoring CSS locator can still be correct for a particular application.
+- Runtime validation remains necessary.
+
+### Page Object generation
+
+Why:
+
+- Separates workflow intent from element interaction details.
+- Makes locator changes local.
+- Produces a structure familiar to automation teams.
+
+Tradeoff:
+
+- A Page Object per small recording can be more structure than a tiny test needs.
+
+### Local execution service
+
+Why:
+
+- Browsers cannot safely spawn Playwright processes directly.
+- Node can manage files, environment variables, child processes, reports, and artifacts.
+- Binding locally keeps the portfolio tool simple.
+
+Tradeoff:
+
+- The user must run the API and install Playwright/Chromium.
+- A cloud version would require stronger isolation, authentication, quotas, and secret management.
+
+### One repair retry
+
+Why:
+
+- Prevents loops and unpredictable test mutation.
+- Makes each repair auditable.
+- Keeps a failed test meaningful.
+
+Tradeoff:
+
+- It deliberately does not solve complex multi-step failures.
+
+## 11. Testing strategy
+
+The project uses Vitest for focused behavior tests.
+
+### Parser tests verify
+
+- Recorder normalization.
+- Live/demo mode behavior.
+- Locator scoring and semantic preference.
+- Password redaction.
+- Generated-ID avoidance.
+- Recorder image-role conversion to Playwright's `img` role.
+- Domain errors for malformed input.
+
+### Generator tests verify
+
+- Required project files exist.
+- Page Object locators are generated correctly.
+- Protected values use the environment and are absent from source.
+- Artifact options reach Playwright configuration.
+- Agent timeout overrides are honored.
+- Dropdowns use `selectOption()`.
+- Inputs use sequential key events.
+- `Tab` includes the settle delay.
+
+### Repair tests verify
+
+- A failed role locator is replaced by the recorded test-ID fallback.
+- Only one retry occurs.
+- The repaired recording is passed to the second execution.
+- The agent stops after the first failure when no safe fallback exists.
+
+### API tests verify
+
+- Health response.
+- ZIP response and generated content.
+- Run payload behavior.
+- Validation failures.
+- Agent Lab's local-only boundary.
+
+## 12. Main STAR answer
+
+Use this for questions such as "Tell me about your most important project," "Tell me about something you built end to end," or "Describe a difficult technical problem you solved."
+
+### Situation
+
+> Browser recording tools made it quick to capture a workflow, but the output was not a maintainable automation project. After recording, an engineer still had to interpret commands, choose stable locators, create Page Objects, configure Playwright, remove secrets, execute the result, debug failures, and package the code. That manual handoff was repetitive and introduced inconsistent framework structure and brittle selectors.
+
+### Task
+
+> I wanted to build a local developer tool that converted Recorder evidence into a reviewable and executable Playwright TypeScript project. My requirements were deterministic generation, maintainable Page Object output, selector-quality feedback, protected-input handling, real Chromium validation before export, and a repair demonstration that stayed inside clear safety boundaries.
+
+### Action
+
+> I first created a typed normalized recording model so Chrome Recorder input was decoupled from generated Playwright code. I used Zod at both the browser-import and API boundaries, mapped supported commands into seven internal action kinds, removed duplicate `keyUp` events, and surfaced unknown commands instead of silently ignoring them.
+>
+> Next, I built a deterministic locator classifier. It converts ARIA, test-ID, ID, text, CSS, and XPath selectors into Playwright locator candidates and ranks them using transparent stability heuristics. The UI keeps all original alternatives, so the user can override the recommendation without losing evidence.
+>
+> I then built a pure generator that emits an executable spec, Page Object, Playwright config, package file, environment template, and README. I deliberately used native selection and sequential keyboard events because enterprise screens can depend on real focus and key event behavior.
+>
+> On the full-stack side, I built a React studio for inspection and live code preview, plus an Express API for server-side payload validation, ZIP streaming, isolated run-directory creation, Playwright child-process execution, JSON-report parsing, and artifact collection. Sensitive recorded values are replaced before generation and supplied to live runs through the child environment.
+>
+> Finally, I built Agent Lab to demonstrate bounded recovery. It creates a controlled locator-drift failure, identifies the failed step from Playwright evidence, chooses only a recorded non-XPath fallback above a confidence threshold, patches one locator in memory, and verifies exactly one retry.
+
+### Result
+
+> The result was a working end-to-end pipeline where one Recorder JSON input becomes a six-file Playwright project that can be inspected, executed in local Chromium, diagnosed with reports and artifacts, and downloaded as a ZIP. It replaced repeated framework setup and manual selector transcription with one consistent workflow. The core parser, generation, security, API, and repair behaviors are covered by automated tests. Just as importantly, the repair feature remains auditable: it either verifies one evidence-backed patch or stops safely.
+
+### Short STAR version
+
+> Chrome Recorder reduced recording time but still left a large manual conversion step. I set out to create a deterministic local tool that generated maintainable Playwright projects and validated them before export. I built a normalized domain model, transparent locator scoring, Page Object and test generation, a React review studio, an Express/Playwright execution service, protected-value handling, ZIP export, and a one-retry repair policy. The final workflow converts one recording into a six-file executable project and gives the user code, run evidence, artifacts, and a portable ZIP from one interface.
+
+## 13. How to defend each resume bullet
+
+### "Built a full-stack tool"
+
+Say:
+
+> I owned both sides. React manages import, inspection, locator selection, code preview, run state, and artifact presentation. Express revalidates the domain payload, generates ZIPs, manages local run directories, starts Playwright, parses reports, and serves artifacts.
+
+### "Converts Chrome Recorder journeys into ready-to-run Playwright projects"
+
+Say:
+
+> The input is Recorder JSON. I normalize it into a typed internal model, then generate a test spec, Page Object, Playwright config, package file, environment template, and README. The output has scripts and dependencies needed to run as a standalone project after installation and environment setup.
+
+### "Engineered the code-generation engine"
+
+Say:
+
+> It is template-based and deterministic, not an LLM prompt. The generator uses the normalized step model and selected locator candidates to build TypeScript source. That decision gives repeatability, easy unit testing, and no hallucinated selectors.
+
+### "Implemented locator-quality evaluation"
+
+Say:
+
+> I classify captured selectors and apply transparent scores based on expected maintainability. Roles, test IDs, and stable IDs score highly; generic CSS is medium; generated IDs, positional selectors, and XPath score poorly. The score is guidance, and runtime execution remains the final validation.
+
+### "Designed live code preview with in-browser execution"
+
+Use more precise spoken wording:
+
+> The code preview is in the browser UI, and the user starts execution from that UI. The actual Playwright and Chromium process runs in the local Node backend because a browser sandbox cannot spawn it safely.
+
+### "Built security-conscious input handling"
+
+Say:
+
+> I validate request shape and navigation protocols, bind the API locally, restrict browser origins, limit request and field sizes, redact password-like recorded values, keep secrets out of generated source, and pass the protected run value through the child process environment. For a hosted version, I would additionally add authentication, per-run containers, egress controls, and a managed secret store.
+
+### "Packaged output as downloadable ZIP projects"
+
+Say:
+
+> The backend regenerates files from the validated domain model and streams them with Archiver. It does not accept arbitrary file paths from the browser, which keeps the export boundary narrow.
+
+### "Used AI-assisted development"
+
+Say:
+
+> AI accelerated iteration, test generation ideas, and design exploration, but I owned the architecture, constraints, integration, verification, and final code decisions. The runtime generator itself is deterministic. Agent Lab is also currently a bounded policy agent, not an LLM-controlled code rewriter.
+
+## 14. Resume wording cautions
+
+These distinctions prevent an interviewer from finding a credibility gap:
+
+1. Prefer "execution initiated from the browser UI" over "Playwright executes inside the browser."
+2. Prefer "ready-to-run generated project" over "complete enterprise framework for every application."
+3. Call locator scoring a heuristic, not an accuracy percentage.
+4. Call Agent Lab a bounded deterministic repair agent, not unrestricted AI self-healing.
+5. Do not attach the separate 55% regression-cycle metric to TestPilot unless you have measured TestPilot itself against that workflow.
+6. Do not claim the generated test is guaranteed to pass. Live execution exists precisely because generation and runtime validity are different.
+7. Be clear that imported recordings default to simulation unless live mode is explicitly enabled.
+8. Be clear that exported projects currently expect the secret in the process environment; the local Studio runner injects it directly.
+
+## 15. A strong live explanation sequence
+
+If an interviewer asks you to walk through the project, use this order:
+
+1. Start with the manual problem, not the UI.
+2. Show or describe a small Recorder JSON input.
+3. Explain raw-to-normalized command conversion.
+4. Open one step and compare a role locator, test ID, CSS, and XPath score.
+5. Show the generated spec and Page Object.
+6. Point out that the same generator powers preview, run, and export.
+7. Show protected input becoming `process.env.TESTPILOT_SECRET`.
+8. Start a local run and explain that Express launches Playwright Chromium.
+9. Show the result, completed steps, and artifacts.
+10. Run Agent Lab and explain why it is allowed to change one locator but not an assertion or value.
+11. Finish with limitations and the next production improvement.
+
+That sequence demonstrates product thinking, frontend work, backend work, automation depth, security, and engineering judgment.
+
+## 16. Twenty likely interview questions and strong answers
+
+### 1. What is TestPilot?
+
+> TestPilot is a local full-stack developer tool that converts Chrome Recorder JSON into a structured Playwright TypeScript project. It validates and normalizes commands, scores locator alternatives, redacts protected inputs, generates six project files, previews them in React, executes live journeys through an Express-managed Playwright process, returns artifacts, and exports the project as a ZIP.
+
+### 2. Why did you build it when Playwright already has code generation?
+
+> Playwright codegen is useful for generating actions, but my target workflow started from Chrome Recorder JSON and needed more than action snippets. I wanted a reviewable normalized model, Page Object output, transparent locator ranking, secret handling, code preview, selectable artifacts, local execution, ZIP packaging, and a bounded repair demonstration. TestPilot is the orchestration and quality layer around recorded evidence.
+
+### 3. Explain the architecture.
+
+> React handles the user workflow. A TypeScript parser and Zod schema convert Recorder input into a normalized recording. A pure generator converts that model into Playwright files. Express revalidates browser payloads and owns privileged operations such as file creation, ZIP streaming, process execution, report parsing, and artifact serving. Playwright and Chromium perform live validation. A separate policy layer performs the controlled one-retry locator repair.
+
+### 4. Why did you create a normalized intermediate model?
+
+> It decouples input format from output framework. The UI, generator, backend validation, metrics, and repair policy all operate on one stable contract. If Recorder adds metadata or if I later generate another test framework, I do not need to mix raw parsing logic into every layer.
+
+### 5. How do you convert Recorder commands into Playwright?
+
+> I map known commands to seven internal action kinds: viewport, navigate, click, fill, press, assert, and scroll. `keyUp` is dropped because the matching `keyDown` already represents the action. Unknown types become unsupported steps, and live generated code throws a clear manual-conversion error instead of pretending they succeeded.
+
+### 6. How does locator scoring work?
+
+> I flatten every captured selector alternative, classify its syntax, convert it into a Playwright locator candidate, assign a deterministic score, and sort candidates. Role selectors score 98, test IDs 96, simple IDs 95, and input labels 94. Generic CSS scores 58, while positional CSS, generated IDs, and XPath score much lower. It is a maintainability heuristic, not a runtime guarantee.
+
+### 7. Why can a test ID score below a role locator?
+
+> Role locators align with accessible user behavior and often survive DOM restructuring, so I gave them the highest default. Test IDs are also highly stable and are an excellent explicit automation contract. The difference is intentionally small, and the UI lets the user override the ranking because application context matters.
+
+### 8. How do you prevent brittle generated tests?
+
+> I retain and rank all recorded alternatives, prefer semantic or explicit selectors, flag weak selectors visually, preserve unsupported commands for review, generate a Page Object so locators are centralized, and run the result in Chromium before export. The repair lab can use one safe captured fallback for a controlled locator-drift failure.
+
+### 9. How is the generated project structured?
+
+> It contains a Playwright spec, a Page Object, `playwright.config.ts`, `package.json`, `.env.example`, and a README. The spec expresses the journey with `test.step()`, while the Page Object owns locators and interactions. Config contains timeouts, reporters, Chromium settings, and artifact options.
+
+### 10. Why did you use the Page Object Model?
+
+> It keeps workflow intent in the test and locator mechanics in one class. That improves readability and makes locator maintenance local. It also matches the structure many QA automation teams already use. I recognize that it can be excessive for a trivial one-step test, but it is a good default for generated reusable journeys.
+
+### 11. How does live execution work technically?
+
+> The UI posts the normalized recording and options to Express. The server validates them, generates files into a random run directory, and spawns the root Playwright CLI with that directory as the working directory and one worker. It injects the protected value into the child environment, waits for completion or the outer timeout, parses the Playwright JSON report, collects artifacts, and returns a structured result.
+
+### 12. Does Playwright run inside React or the browser?
+
+> No. React initiates and visualizes the run. The actual Playwright process runs under Node on the local backend. That separation is necessary because the browser sandbox cannot spawn local processes or manage run directories securely.
+
+### 13. How do you handle passwords and tokens?
+
+> During normalization I detect password-like targets from locator evidence and replace their recorded value with a placeholder. Generated source reads `TESTPILOT_SECRET`, so the original secret is absent from the generated files and preview. For a Studio run, the protected value stays in React memory, goes to the local API, and is injected into the Playwright child process environment. A hosted version would use a managed secret store and stronger isolation.
+
+### 14. What security controls did you add?
+
+> The API binds to loopback, restricts browser origins to local hosts, limits JSON size, validates every normalized field with Zod, allows only HTTP and HTTPS navigation, bounds step count, locator count, dimensions, strings, secrets, and timeouts, and restricts Agent Lab to a local target. Export is regenerated from the validated model rather than accepting arbitrary files or paths.
+
+### 15. What makes the repair workflow agentic?
+
+> It closes an observe-decide-act-verify loop. It executes the test, reads failure evidence, identifies the failed step, chooses an allowed fallback under policy, patches the selected locator, and independently verifies a retry. It is deterministic rather than LLM-based, and its autonomy is intentionally limited.
+
+### 16. How do you stop the repair agent from hiding real defects?
+
+> It can only handle locator drift, only use alternatives already captured in the original recording, never choose XPath, require a score of at least 70, change exactly one selected locator, and retry exactly once. It cannot change assertions, data, credentials, application code, or control flow. If it lacks safe evidence, it stops failed.
+
+### 17. What was the hardest technical challenge?
+
+> The hardest part was preserving trust across generation and execution. A converter can easily produce code that looks valid while changing behavior, leaking data, or using brittle selectors. I addressed that with a normalized domain model, deterministic generation, transparent scoring, source-backed alternatives, real keyboard interaction for event-sensitive fields, server-side revalidation, and execution of the same generated output that the user previews.
+
+### 18. How did you test the project?
+
+> I wrote focused Vitest coverage for parsing, locator selection, secret redaction, project generation, artifact configuration, enterprise-style keyboard behavior, API validation and export, and both repair outcomes. The most important repair tests prove that the second attempt receives only the allowed test-ID locator change and that no retry occurs without a safe fallback.
+
+### 19. What are the current limitations?
+
+> Command support is intentionally finite, scoring is heuristic, ordinary live runs can visit any HTTP or HTTPS URL, the product is local and single-user, and Agent Lab supports only controlled locator drift. Exported projects expect protected values in the process environment. A production service would also need authentication, persistent run records, isolated containers, network egress policy, queues, concurrency controls, and managed secrets.
+
+### 20. What would you build next?
+
+> My first priorities would be a plugin-style command adapter system, runtime checks for locator uniqueness, richer assertions, reusable fixtures and authentication state, explicit environment loading in exported projects, and containerized run isolation. For repair, I would add DOM and trace evidence, but keep a deterministic policy gate so an LLM could recommend a change without being allowed to apply arbitrary code modifications.
+
+## 17. Fast follow-up questions
+
+Prepare one-sentence answers for these:
+
+| Follow-up | Answer |
+|---|---|
+| Why Zod? | It provides runtime validation and typed parsed output at untrusted JSON and API boundaries. |
+| Why Express? | It is a small local API layer for process, filesystem, ZIP, and artifact operations. |
+| Why React? | The workflow needs interactive step inspection, locator selection, preview, and run-state visualization. |
+| Why TypeScript end to end? | Shared types and pure modules reduce frontend/backend contract drift. |
+| Why zero Playwright retries? | Hidden retries can mask flakiness; Agent Lab owns one explicit, evidence-backed retry. |
+| Why one worker? | It makes a single recorded journey deterministic and avoids resource contention in a local tool. |
+| Why JSON reporter plus line reporter? | Line output helps humans, while JSON enables reliable step counting and future analytics. |
+| Why keep all locator alternatives? | They preserve source evidence, allow user choice, and support safe fallback repair. |
+| Why not persist every run in a database? | The current tool is local and intentionally lightweight; run folders are sufficient for the scope. |
+| Why demo mode? | It prevents unintended external calls and gives a predictable portfolio presentation. |
+
+## 18. Final revision sheet
+
+Memorize these facts:
+
+- Input: Chrome Recorder JSON.
+- Core stack: React, TypeScript, Vite, Express, Zod, Playwright, Vitest.
+- Internal action kinds: viewport, navigate, click, fill, press, assert, scroll.
+- Generated output: six files.
+- Strong locator order: role, test ID, stable ID, label, text, generic CSS, brittle CSS, XPath.
+- Secret output: `process.env.TESTPILOT_SECRET`.
+- Live execution: local Express backend starts Playwright Chromium.
+- Run worker count: one.
+- Outer process limit: 210 seconds.
+- Reports: line plus JSON.
+- Repair threshold: score 70 or higher.
+- Repair exclusions: current locator and XPath.
+- Repair budget: one retry.
+- Agent target: local controlled mutation only.
+- Default imported mode: demo.
+- Main architectural principle: preview, execution, and export share the same deterministic generator.
+
+End with this sentence when presenting the project:
+
+> The main engineering lesson from TestPilot was that generating automation code is the easy part; preserving traceability, safe inputs, reliable interaction behavior, and trust in the executed result is what turns a converter into a usable developer tool.
