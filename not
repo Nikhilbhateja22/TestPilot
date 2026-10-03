@@ -808,4 +808,144 @@ Memorize these facts:
 
 End with this sentence when presenting the project:
 
+
+QUESTIONS FOR QUESTIONING.....................
+
+## 1. What problem does TestPilot solve?
+
+TestPilot solves the gap between recording a browser workflow and creating a maintainable automation framework from it.
+
+Chrome DevTools Recorder can capture user actions, but the exported JSON is not always ready to be used as a professional test project. Developers still need to understand the commands, choose reliable locators, organize the code, handle test data, and configure Playwright.
+
+TestPilot automates this work. It imports the Recorder JSON, validates and normalizes the commands, evaluates the available locators, and generates a structured Playwright project using the Page Object Model.
+
+It also provides code preview, local execution, ZIP export, secure handling of sensitive values, and failure artifacts such as screenshots, videos, and traces.
+
+In short, TestPilot saves development time and turns simple browser recordings into readable, reusable, and executable Playwright automation while still allowing the user to review and control the generated output.
+
+---
+
+## 2. Can you explain the architecture of TestPilot?
+
+TestPilot follows a layered architecture with a React frontend, shared processing modules, an Express backend, and a Playwright execution layer.
+
+The React application provides the user interface for importing recordings, reviewing commands, changing locators, editing test data, previewing generated code, running tests, and viewing results.
+
+The recorder module validates and normalizes Chrome Recorder JSON. The generator module then converts the normalized recording into a six-file Playwright project containing a test specification, Page Object, configuration, package file, environment example, and README.
+
+The Express server provides APIs for health checks, project export, test execution, and the repair agent. For live runs, the server creates an isolated run directory and starts Playwright as a child process.
+
+This separation makes the system easier to maintain because parsing, generation, user interaction, execution, and repair each have a clear responsibility.
+
+---
+
+## 3. How does TestPilot convert Chrome Recorder JSON into Playwright code?
+
+TestPilot first validates the imported JSON to confirm that it contains a valid list of recorded browser commands.
+
+It then normalizes each Recorder command into a common internal structure. For example, navigation becomes a `navigate` step, a click becomes a `click` step, an input change becomes a `fill` step, and an element wait becomes an assertion.
+
+During normalization, TestPilot also extracts all available selectors and converts them into Playwright locator formats such as `getByRole()`, `getByTestId()`, `getByLabel()`, or `locator()`.
+
+The normalized recording is passed to a deterministic generator. The generator creates a Page Object containing locators and action methods, and a Playwright test containing named `test.step()` blocks.
+
+Because generation is deterministic, the same recording and configuration produce the same project structure and code, making the output predictable and easier to test.
+
+---
+
+## 4. How does locator scoring work in TestPilot?
+
+TestPilot gives every recorded locator a quality score based on how stable and meaningful it is expected to be.
+
+Semantic locators receive the highest scores. For example, a role-based locator with an accessible name scores highly because it describes how a user identifies the element. Test IDs and simple named IDs also receive strong scores.
+
+Text locators receive medium scores, while generic CSS selectors receive lower scores. Position-based selectors, generated IDs, and XPath receive the lowest scores because they are usually more likely to break when the page structure changes.
+
+After scoring, TestPilot sorts the locator alternatives and initially selects the highest-scoring one. The user can still inspect all alternatives and manually choose a different locator.
+
+This system does not guarantee that a locator will work at runtime, but it gives users a clear and consistent way to prefer stronger selectors before generating or running the test.
+
+---
+
+## 5. What is the difference between demo mode and live mode?
+
+TestPilot supports demo mode and live mode because they serve different purposes.
+
+Demo mode is a deterministic simulation. It does not open a browser or contact the target website. Instead, it processes each normalized command with controlled timing and returns a successful result. This makes demonstrations reliable even when the external application is unavailable.
+
+Live mode performs real browser automation. TestPilot generates a temporary Playwright project, starts Chromium, executes the journey with one worker, and waits for the actual test result.
+
+Live mode can produce debugging artifacts such as screenshots, traces, and videos when failures occur. It can also report the completed steps and return sanitized console output.
+
+In short, demo mode proves the parsing and presentation workflow, while live mode validates the real application behavior. A successful demo run should never be treated as proof that the actual website works.
+
+---
+
+## 6. How does the bounded repair agent work?
+
+The bounded repair agent handles a specific type of failure: locator drift.
+
+When a test fails, the agent identifies the failed step by comparing the Playwright output with the normalized step titles. It then checks the alternative locators that were already captured in the original recording.
+
+The agent rejects the currently failing locator, XPath options, and candidates with weak scores. It selects the first safe alternative that meets the required quality level and changes only that step’s selected locator.
+
+After applying the locator patch in memory, the agent performs one fresh retry. If the retry passes, the result is marked as recovered. If it fails again, the agent stops.
+
+The repair is intentionally limited. It cannot change application code, test values, assertions, credentials, or control flow. This keeps the repair process controlled, explainable, and based only on recorded evidence.
+
+---
+
+## 7. How does TestPilot handle sensitive information?
+
+TestPilot detects potentially sensitive inputs by checking locator names and values for words such as password, secret, token, passcode, authorization, or API key.
+
+When a sensitive input is detected, the original recorded value is removed from the normalized model. TestPilot replaces it with a placeholder such as `{{TESTPILOT_SECRET}}`.
+
+The generated Playwright code reads the value from the `TESTPILOT_SECRET` environment variable. If the variable is unavailable, the generated test throws a clear error instead of using a hard-coded credential.
+
+For a live Studio run, the value is sent only to the local Express API and injected into the Playwright child process environment. It is kept in React memory and is not saved to browser storage.
+
+This design reduces the chance of passwords being included in generated source code, exported ZIP files, console output, or version control.
+
+---
+
+## 8. Why does TestPilot use the Page Object Model?
+
+TestPilot uses the Page Object Model to keep generated automation code organized and maintainable.
+
+Instead of placing every locator and browser action directly inside the test file, TestPilot creates a separate Page Object. This file contains the locators and methods for actions such as clicking, typing, navigation, scrolling, and assertions.
+
+The Playwright test file focuses on the business journey. It creates the Page Object and calls its methods inside named `test.step()` blocks. This makes the test easier to read and understand.
+
+The separation also improves maintainability. If a locator or page interaction changes, it can usually be updated in the Page Object without rewriting the entire test.
+
+Named steps are also useful for reporting and repair because TestPilot can connect a Playwright failure to the original normalized command through the step title.
+
+---
+
+## 9. How does TestPilot support CROAMIS and event-sensitive input fields?
+
+Some enterprise applications, including CROAMIS, depend on real keyboard events for validation, autocomplete, and dependent field updates.
+
+Because of this, TestPilot does not use direct DOM value assignment or Playwright’s normal `fill()` method for recorded input changes. Those approaches can update the visible value without triggering all the required keyboard events.
+
+For a normal input, the generated code clicks the field, presses `ControlOrMeta+A`, and enters the value using `pressSequentially()` with an 80-millisecond delay. This more closely represents real user typing.
+
+For dropdown controls, TestPilot first tries to select an option by its visible label and then falls back to its value. Tab actions also include a short wait so the application has time to process field changes.
+
+This behavior makes generated tests more reliable for older jQuery applications and complex enterprise forms.
+
+---
+
+## 10. What are the current limitations of TestPilot?
+
+TestPilot is not a complete interpreter for every Chrome Recorder feature. It supports common commands such as navigation, clicks, input changes, keyboard presses, assertions, scrolling, and viewport changes.
+
+More advanced Recorder information, including frame targets, click offsets, mobile emulation settings, asserted navigation events, and some uncommon command types, is currently ignored or marked as unsupported.
+
+Locator scoring is heuristic. A high score means that a locator appears strong, but it does not prove that the locator exists or is unique on the live page.
+
+The repair agent is also intentionally limited. It can only choose from alternatives stored in the recording, it cannot search the live DOM for new selectors, and it performs only one retry.
+
+Other limitations include no run cancellation, execution queue, persistent run-history interface, or concurrency control. These boundaries keep the current system predictable while leaving clear areas for future improvement.
 > The main engineering lesson from TestPilot was that generating automation code is the easy part; preserving traceability, safe inputs, reliable interaction behavior, and trust in the executed result is what turns a converter into a usable developer tool.
